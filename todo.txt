@@ -1,0 +1,30 @@
+TODO LIST
+
+-add tiles
+-make only visible tiles render
+
+-add enemies/objects (entities)
+-make entities render according to z ordering
+
+-add player character
+-add collision with walls
+
+-maybe add enemy self collision
+
+-turret enemy
+
+-add player attacking
+-add game loop
+
+-add main menu
+-add settings
+
+-add music
+-add sounds 
+
+-add external level files
+
+-if extra time, add lighting system
+
+-make movement feel smoother
+-add screen vibration
