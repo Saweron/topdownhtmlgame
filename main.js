@@ -19,28 +19,41 @@ const util = {
     },
     convertY: function(y,h) {
         return h - y
+    },
+    zToScreen: function(z,cam) {
+        return z - cam
+    },
+    fromTile: function(coordinate,tileSize) {
+        return (coordinate)*tileSize
     }
 };
 
-//input parameters tile, screen x, screen y, renderqueue, tile x, tile y
 const graphics = {
     loadassets: function() {
-        //loads all game assets
         var assets = {}
-        var load = function(source) {
+        const load = function(source) {
             var i = new Image()
             i.src = source
             return i
         }
         assets.lemons = load("lemons.jpg")
+        assets.cobbleFloor = load("assets/tiles/cobbleFloor.png")
         return assets
     },
     debugsquare: function(tile,x,y) {
         ctx.fillStyle = 'white';
         ctx.fillRect(x,y,8,8)
     },
-    drawtile: function(tile,x,y,rq,tx,ty) {
-         
+    drawtile: function(tile,x,y,z,rq) {
+        zindex.create(rq,z,function() {
+            ctx.drawImage(images.cobbleFloor,x,y)
+
+            ctx.textAlign = "center"
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x,y,20,-20)
+            ctx.fillText(z, x+8, y+8)
+        })
+
     }
 }
 
@@ -49,9 +62,10 @@ const zindex = {
         list.push({z:zindex,onrender:onrender})
     },
     sort: function(objects) {
-        objects.sort(function(a,b) {if (a.z < b.z){return -1}else if (a.z > b.z) {return 1}else{return 0}})
+        objects.sort(function(a,b) {if (a.z > b.z){return -1}else if (a.z < b.z) {return 1}else{return 0}})
     },
-    render: function(objects,ctx) {
+    render: function(objects) {
+        this.sort(objects)
         for (var i=0;i<objects.length;i++) {
             let item = objects[i];
             item.onrender();
@@ -79,7 +93,7 @@ const tiles = {
             grid.tiles[x][y] = set;
         }
     },
-    render: function(grid,objects,camX,camY,screenW,screenH,tilesize,ontile) {
+    render: function(grid,objects,camX,camY,screenW,screenH,tilesize,ontile,spillBottom,spillTop,spillLeft,spillRight) {
         var offsetX = Math.floor(camX % tilesize);
         var offsetY = Math.floor(camY % tilesize);
         var tileX = Math.floor((camX - offsetX) / tilesize);
@@ -88,22 +102,15 @@ const tiles = {
         var gridWidth = Math.ceil(screenW/tilesize)+2;
         var gridHeight = Math.ceil(screenH/tilesize)+1;
 
-        ctx.fillStyle = 'white';
-        // ctx.fillText("oX " + offsetX + " tX " + tileX , 90, 300);
-
         for (var x = 0; x < gridWidth; x++) {
             for (var y = 0; y < gridHeight; y++) {
                 var item = this.get(grid,tileX+x,tileY+y)
                 if (item) {
-                    //run ontile function with input item, x, and y, tx, and ty
+                    var z = util.zToScreen(util.fromTile(tileY+y,tilesize),Math.floor(camY));
                     ontile(item,
                     -offsetX + (x-1)*tilesize,
                     util.convertY(-offsetY + (y+1)*tilesize,screenH),
-                    objects,x,y)
-                // ctx.fillRect(
-                //     -offsetX + (x-1)*tilesize,
-                //     util.convertY(-offsetY + (y+1)*tilesize,screenH),
-                //     tilesize,tilesize)
+                    z,objects)
                 }
             }
         }
@@ -132,6 +139,8 @@ const images = graphics.loadassets();
 
 var level = generation.generateTemporary(500,100)
 
+console.log(util.fromTile(1,32))
+
 var x = 0;
 var y = 0;
 
@@ -154,8 +163,9 @@ function render(timestamp) {
         y -= time/5  
     }
 
+    //the higher the z index, the further back it appears
     //rendering
-    // var renderQueue = []
+    var renderQueue = []
     // zindex.create(renderQueue,10,function() {
     //     ctx.fillStyle = 'white';
     //     ctx.fillRect(0,0,x,y);
@@ -165,12 +175,17 @@ function render(timestamp) {
     //     ctx.fillRect(5,5,100,70);
     // })
 
-    ctx.clearRect(0,0,480,360)
-    // zindex.sort(renderQueue)
-    // zindex.render(renderQueue,ctx)
-    ctx.drawImage(images.lemons,0,0)
-    tiles.render(level,0,x,y,480,360,8,graphics.debugsquare)
 
+
+    ctx.clearRect(0,0,480,360)
+
+    // zindex.render(renderQueue,ctx)
+    // ctx.drawImage(images.lemons,0,0)
+    // ctx.drawImage(images.cobblestoneFloor,0,0)
+    tiles.render(level,renderQueue,x,y,480,360,32,graphics.drawtile)
+    
+    // zindex.sort(renderQueue)
+    zindex.render(renderQueue)
 
     lastTime = timestamp
     requestAnimationFrame(render)
