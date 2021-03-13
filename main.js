@@ -1,4 +1,8 @@
 //setup
+
+//#region 
+//#endregion
+
 const canvas = document.getElementById("game")
 const ctx = canvas.getContext("2d")
 var lastTime = 0
@@ -50,7 +54,7 @@ const graphics = {
 
             ctx.textAlign = "center"
             ctx.fillStyle = 'white';
-            ctx.fillRect(x,y,20,-20)
+            ctx.fillRect(x,y,-30,-20)
             ctx.fillText(z, x+8, y+8)
         })
 
@@ -93,14 +97,14 @@ const tiles = {
             grid.tiles[x][y] = set;
         }
     },
-    render: function(grid,objects,camX,camY,screenW,screenH,tilesize,ontile,spillBottom,spillTop,spillLeft,spillRight) {
+    render: function(grid,objects,camX,camY,screenW,screenH,tilesize,ontile,spillTop,spillBottom,spillLeft,spillRight) {
         var offsetX = Math.floor(camX % tilesize);
         var offsetY = Math.floor(camY % tilesize);
-        var tileX = Math.floor((camX - offsetX) / tilesize);
-        var tileY = Math.floor((camY - offsetY) / tilesize);
+        var tileX = Math.floor((camX - offsetX) / tilesize)-spillLeft;
+        var tileY = Math.floor((camY - offsetY) / tilesize)-spillBottom;
 
-        var gridWidth = Math.ceil(screenW/tilesize)+2;
-        var gridHeight = Math.ceil(screenH/tilesize)+1;
+        var gridWidth = Math.ceil(screenW/tilesize)+spillLeft+spillRight;
+        var gridHeight = Math.ceil(screenH/tilesize)+spillBottom+spillTop;
 
         for (var x = 0; x < gridWidth; x++) {
             for (var y = 0; y < gridHeight; y++) {
@@ -110,8 +114,8 @@ const tiles = {
 
                     ontile(
                     item,
-                    -offsetX + (x-1)*tilesize,
-                    util.convertY(-offsetY + (y+1)*tilesize,screenH),
+                    -offsetX + (x+1-spillLeft)*tilesize,
+                    util.convertY(-offsetY + (y+1-spillBottom)*tilesize,screenH),
                     z,objects);
                 }
             }
@@ -166,7 +170,7 @@ function render(timestamp) {
     var renderQueue = []
     ctx.clearRect(0,0,480,360)
 
-    tiles.render(level,renderQueue,x,y,480,360,32,graphics.drawtile)
+    tiles.render(level,renderQueue,x,y,480,360,32,graphics.drawtile,1,1,1,1)
     zindex.render(renderQueue)
 
     lastTime = timestamp
