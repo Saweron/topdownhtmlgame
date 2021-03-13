@@ -107,10 +107,12 @@ const tiles = {
                 var item = this.get(grid,tileX+x,tileY+y)
                 if (item) {
                     var z = util.zToScreen(util.fromTile(tileY+y,tilesize),Math.floor(camY));
-                    ontile(item,
+
+                    ontile(
+                    item,
                     -offsetX + (x-1)*tilesize,
                     util.convertY(-offsetY + (y+1)*tilesize,screenH),
-                    z,objects)
+                    z,objects);
                 }
             }
         }
@@ -139,8 +141,6 @@ const images = graphics.loadassets();
 
 var level = generation.generateTemporary(500,100)
 
-console.log(util.fromTile(1,32))
-
 var x = 0;
 var y = 0;
 
@@ -163,28 +163,10 @@ function render(timestamp) {
         y -= time/5  
     }
 
-    //the higher the z index, the further back it appears
-    //rendering
     var renderQueue = []
-    // zindex.create(renderQueue,10,function() {
-    //     ctx.fillStyle = 'white';
-    //     ctx.fillRect(0,0,x,y);
-    // })
-    // zindex.create(renderQueue,1,function() {
-    //     ctx.fillStyle = 'red';
-    //     ctx.fillRect(5,5,100,70);
-    // })
-
-
-
     ctx.clearRect(0,0,480,360)
 
-    // zindex.render(renderQueue,ctx)
-    // ctx.drawImage(images.lemons,0,0)
-    // ctx.drawImage(images.cobblestoneFloor,0,0)
     tiles.render(level,renderQueue,x,y,480,360,32,graphics.drawtile)
-    
-    // zindex.sort(renderQueue)
     zindex.render(renderQueue)
 
     lastTime = timestamp
