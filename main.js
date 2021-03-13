@@ -42,6 +42,8 @@ const graphics = {
         }
         assets.lemons = load("lemons.jpg")
         assets.cobbleFloor = load("assets/tiles/cobbleFloor.png")
+        assets.wall = load("assets/tiles/brickWall.png")
+        assets.grass = load("assets/tiles/grass.png")
         return assets
     },
     debugsquare: function(tile,x,y) {
@@ -49,15 +51,20 @@ const graphics = {
         ctx.fillRect(x,y,8,8)
     },
     drawtile: function(tile,x,y,z,rq) {
-        zindex.create(rq,z,function() {
-            ctx.drawImage(images.cobbleFloor,x,y)
-
-            ctx.textAlign = "center"
-            ctx.fillStyle = 'white';
-            ctx.fillRect(x,y,-30,-20)
-            ctx.fillText(z, x+8, y+8)
-        })
-
+        if (tile == "grass") {
+            zindex.create(rq,z,function() {
+                ctx.drawImage(images.wall,x,y-32/2)
+                //debug things
+                // ctx.textAlign = "center"
+                // ctx.fillStyle = 'white';
+                // ctx.fillRect(x,y,-30,-20)
+                // ctx.fillText(z, x+8, y+8)
+            })
+        } else if (tile == "wall") {
+            zindex.create(rq,z,function() {
+                ctx.drawImage(images.grass,x,y)
+            })
+        }
     }
 }
 
@@ -114,7 +121,7 @@ const tiles = {
 
                     ontile(
                     item,
-                    -offsetX + (x+1-spillLeft)*tilesize,
+                    -offsetX + (x-spillLeft)*tilesize,
                     util.convertY(-offsetY + (y+1-spillBottom)*tilesize,screenH),
                     z,objects);
                 }
@@ -125,16 +132,11 @@ const tiles = {
 };
 
 const generation = {
-    generateTemporary: function(w,h) {
+    generateTemporary: function(w,h,pal) {
         let grid = tiles.new()
         for (var x=0; x<w; x++) {
             for (var y=0; y<h; y++) {
-                // console.log(x + " " + y)
-                if (util.random(1,2) == 1) {
-                    tiles.set(grid,x,y,true)
-                } else {
-                    tiles.set(grid,x,y,false)
-                }
+                tiles.set(grid,x,y,pal[util.random(0,pal.length)]);
             }
         }
         return grid
@@ -143,7 +145,7 @@ const generation = {
 
 const images = graphics.loadassets();
 
-var level = generation.generateTemporary(500,100)
+var level = generation.generateTemporary(500,100,["grass","wall"])
 
 var x = 0;
 var y = 0;
