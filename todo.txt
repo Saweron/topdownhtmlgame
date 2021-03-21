@@ -1,30 +1,46 @@
-TODO LIST
+TODO
 
--add tiles
--make only visible tiles render
+---basic engine 
 
--add enemies/objects (entities)
--make entities render according to z ordering
+    -add tiles //
+    -make only visible tiles render //
 
--add player character
--add collision with walls
+    -add player character //
+    -add collision with walls
 
--maybe add enemy self collision
+    -add enemies/objects (entities)
+    -make entities render according to z ordering 
 
--turret enemy
 
--add player attacking
--add game loop
+    -add player attacking
+    -add game loop
 
--add main menu
--add settings
+    -add main menu
+    -add settings
 
--add music
--add sounds 
+    -add external level files
 
--add external level files
+---enemies
 
--if extra time, add lighting system
+    -turret enemy ai
+    -slime enemy ai
+        -spawner enemy ai
+    -fighter enemy ai
 
--make movement feel smoother
--add screen vibration
+    -blue slime
+    -magenta slime
+
+    -turret enemy
+
+    -soldier 
+    -large soldier
+
+---extra cosmetics
+
+    -add music
+    -add sounds 
+
+    -make movement feel smoother
+    -add screen vibration
+
+    -if extra time, add lighting system (torches render yellow/blue additive circles)
