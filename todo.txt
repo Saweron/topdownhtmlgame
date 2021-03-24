@@ -6,10 +6,10 @@ TODO
     -make only visible tiles render //
 
     -add player character //
-    -add collision with walls
+    -add collision with walls //
 
-    -add enemies/objects (entities)
-    -make entities render according to z ordering 
+    -add enemies/objects (entities)//
+    -make entities render according to z ordering //
 
 
     -add player attacking
