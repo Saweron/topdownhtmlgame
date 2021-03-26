@@ -19,6 +19,8 @@ TODO
     -add settings
 
     -add external level files
+    --add camera animations//
+    --add camera boxes
 
 ---enemies
 
@@ -41,6 +43,6 @@ TODO
     -add sounds 
 
     -make movement feel smoother
-    -add screen vibration
+    -add screen vibration // 
 
     -if extra time, add lighting system (torches render yellow/blue additive circles)

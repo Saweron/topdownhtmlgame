@@ -1,6 +1,9 @@
 
 //#region 
 //#endregion
+// var mydata = JSON.parse(data);
+
+const leveldata = {}
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -31,8 +34,23 @@ const util = {
     tt: function(coordinate,tileSize) {
         return Math.floor(coordinate/tileSize);
     },
-    interpolate: function(a,at,b,bt,ts,curvetype) {
-
+    interpolate: function(a,b,percent,curvetype) {
+        var i = 0
+        if (curvetype == "linear") {
+            i = percent
+        } else if (curvetype == "smooth") {
+            // i = percent*percent
+            i = 1-(1-percent)**4
+            // console.log(percent)
+        }
+        return a + (b-a)*i
+    },
+    interpolateAnimation: function(a,at,b,bt,ts,curvetype) {
+        if (ts > bt) {
+            return b 
+        }
+        var percent = (ts - at) / (bt - at)
+        return this.interpolate(a,b,percent,curvetype)
     }
 };
 
@@ -259,6 +277,88 @@ const entities = {
     }
 }
 
+const cam = {
+    new: function() {
+        return {x:0,y:0,t1:0,t2:0,x1:0,y1:0,x2:0,y2:0,vibration:[],animActive:false,aX:0,aY:0}
+        //x, y apparent coordinates
+        //aX aY absolute coordinates
+    },
+    tick: function(camera,ts) {
+        //panning
+        if (ts >= camera.t2) {
+            camera.animActive = false
+            camera.aX = camera.x2
+            camera.aY = camera.y2
+        }
+        if (camera.animActive) {
+            camera.aX = util.interpolateAnimation(camera.x1,camera.t1,camera.x2,camera.t2,ts,"smooth")
+            camera.aY = util.interpolateAnimation(camera.y1,camera.t1,camera.y2,camera.t2,ts,"smooth")
+        }
+        if (camera.vibration.length > 0) {
+            while (true) {
+                if (camera.vibration[0] && ts > camera.vibration[0].ts) {
+                    camera.x = camera.aX - camera.vibration[0].x
+                    camera.y = camera.aY - camera.vibration[0].y
+                    camera.vibration.shift();
+                } else {
+                    break
+                }
+            }
+        } else {
+            camera.x = camera.aX
+            camera.y = camera.aY
+        }
+    },
+    setPan: function(camera,x,y,duration,ts) {
+        camera.x1 = camera.aX
+        camera.y1 = camera.aY
+        camera.x2 = x
+        camera.y2 = y
+        camera.t1 = ts
+        camera.t2 = ts+duration
+        camera.animActive = true
+    },
+    setVibrate: function(camera,frequency,intensity,duration,ts) {
+        camera.vibration = []
+        for (var stamp = 0; stamp <= ts + duration; stamp += frequency) {
+            camera.vibration.push(
+                {ts:stamp,
+                x:util.random(0,intensity*2)-intensity,
+                y:util.random(0,intensity*2)-intensity})
+        }
+    },
+    createBox: function(boxes,x,y,w,h,fX,fY) {
+        boxes.push({x:x,y:y,w:w,h:h,fX:fX,fY:fY});
+    },
+    checkBoxes: function(boxes,x,y,w,h,ts) {
+        for (var i = 0; i < boxes.length; i++) {
+            var item = boxes[i]
+            var colliding = physics.squareCollision(item.x,item.y,item.w,item.h,x,y,w,h)
+            if (colliding) {
+                return {x:item.fX,y:item.fY}
+            }
+        }
+        return false
+    },
+    renderDebugBoxes: function(boxes,camX,camY) {
+        for (var i = 0; i < boxes.legnth; i++) {
+            var item = boxes[i]
+            ctx.fillStyle = "white"
+            ctx.fillRect(item.x-camX,util.convertY(item.y-camY,canvasHeight),item.w,item.h)
+        }
+    }
+}
+
+const menu = {
+    //todo add menu, button, 
+
+    //addbutton x, y w,h,onpress
+
+    //evalbuttons
+
+    //text
+}
+
 const loading = {
 
 }
@@ -266,8 +366,6 @@ const loading = {
 const images = graphics.loadassets();
 
 var level = generation.generateTemporary(500,100,["grass","wall"]);
-
-console.log(physics.checkPoint(4,4,4,4,2,2));
 
 var x = 0;
 var y = 0;
@@ -277,8 +375,17 @@ var charY = 100;
 var xVel = 0;
 var yVel = 0;
 
+var c = cam.new()
+cam.setPan(c,300,0,500,0)
+
+// cam.setVibrate(c,10,10,300,0)
+// cam.tick(c,7)
+
 var enemies = []
 entities.new(enemies,{x:0,y:40},graphics.debugentity)
+
+var camboxes = []
+
 
 function render(timestamp) {
     var time = timestamp - lastTime
@@ -286,18 +393,18 @@ function render(timestamp) {
         time = 0
     }
 
-    if (isKeyPressed("ArrowRight")) {
-    x+=time/5;
-    } 
-    if (isKeyPressed("ArrowLeft")) {
-    x-=time/5;
-    }
-    if (isKeyPressed("ArrowUp")) {
-    y += time/5  ;
-    }
-    if (isKeyPressed("ArrowDown")) {
-    y -= time/5;
-    }
+    // if (isKeyPressed("ArrowRight")) {
+    // x+=time/5;
+    // } 
+    // if (isKeyPressed("ArrowLeft")) {
+    // x-=time/5;
+    // }
+    // if (isKeyPressed("ArrowUp")) {
+    // y += time/5  ;
+    // }
+    // if (isKeyPressed("ArrowDown")) {
+    // y -= time/5;
+    // }
 
     xVel = 0;
     yVel = 0; 
@@ -315,8 +422,11 @@ function render(timestamp) {
         xVel -= time/10
     }
 
-    x = Math.round(x);
-    y = Math.round(y);
+    // x = Math.round(x);
+    // y = Math.round(y);
+    cam.tick(c,timestamp)
+    x = c.x;
+    y = c.y;
 
 
     var renderQueue = []
@@ -329,7 +439,6 @@ function render(timestamp) {
     })
 
     entities.render(enemies,x,y,renderQueue)
-
     zindex.render(renderQueue)
 
 
