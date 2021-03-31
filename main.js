@@ -39,9 +39,7 @@ const util = {
         if (curvetype == "linear") {
             i = percent
         } else if (curvetype == "smooth") {
-            // i = percent*percent
             i = 1-(1-percent)**4
-            // console.log(percent)
         }
         return a + (b-a)*i
     },
@@ -212,13 +210,6 @@ const physics = {
         newPos = this.move(0, yv, newPos.x, newPos.y, w1, h1, x2, y2, w2, h2);
         return newPos;
     },
-    consider: function(tx,ty,memory,colliderFunction,grid) {
-        if (!memory[tx + "," + ty]) {
-            if (colliderFunction(grid,tx,ty)) {
-                memory[tx + "," + ty] = {x:tx,y:ty};
-            }
-        } else {return false}
-    },
     gridCollide: function(x,y,w,h,xv,yv,grid,tilesize,colliderFunction) {
         var prX = x+xv;
         var prY = y+yv;
@@ -285,6 +276,7 @@ const cam = {
     },
     tick: function(camera,ts) {
         //panning
+
         if (ts >= camera.t2) {
             camera.animActive = false
             camera.aX = camera.x2
@@ -328,23 +320,27 @@ const cam = {
         }
     },
     createBox: function(boxes,x,y,w,h,fX,fY) {
-        boxes.push({x:x,y:y,w:w,h:h,fX:fX,fY:fY});
+        boxes.push({x:x,y:y,w:w,h:h,fX:fX,fY:fY,active:false});
     },
-    checkBoxes: function(boxes,x,y,w,h,ts) {
+    checkBoxes: function(boxes,px,py,pw,ph) {
         for (var i = 0; i < boxes.length; i++) {
             var item = boxes[i]
-            var colliding = physics.squareCollision(item.x,item.y,item.w,item.h,x,y,w,h)
-            if (colliding) {
+            // var colliding = physics.squareCollision(item.x,item.y,item.w,item.h,px,py,pw,ph)
+            var colliding = physics.squareCollision(px,py,pw,ph,item.x,item.y,item.w,item.h)
+            if (colliding && !item.active) {
                 return {x:item.fX,y:item.fY}
             }
         }
         return false
     },
     renderDebugBoxes: function(boxes,camX,camY) {
-        for (var i = 0; i < boxes.legnth; i++) {
+        for (var i = 0; i < boxes.length; i++) {
             var item = boxes[i]
-            ctx.fillStyle = "white"
-            ctx.fillRect(item.x-camX,util.convertY(item.y-camY,canvasHeight),item.w,item.h)
+            ctx.fillStyle = 'rgba(255, 0, 255, .2)'
+            ctx.strokeStyle = 'white'
+            ctx.lineWidth = 3
+            ctx.fillRect(item.x-camX,util.convertY(item.y-camY,canvasHeight),item.w,-item.h)
+            ctx.strokeRect(item.x-camX,util.convertY(item.y-camY,canvasHeight),item.w,-item.h)
         }
     }
 }
@@ -366,6 +362,7 @@ const loading = {
 const images = graphics.loadassets();
 
 var level = generation.generateTemporary(500,100,["grass","wall"]);
+// var level = generation.generateTemporary(500,100,["grass","grass"]);
 
 var x = 0;
 var y = 0;
@@ -376,35 +373,23 @@ var xVel = 0;
 var yVel = 0;
 
 var c = cam.new()
-cam.setPan(c,300,0,500,0)
-
-// cam.setVibrate(c,10,10,300,0)
-// cam.tick(c,7)
 
 var enemies = []
 entities.new(enemies,{x:0,y:40},graphics.debugentity)
 
 var camboxes = []
+cam.createBox(camboxes,0,0,40,90,0,0)
+cam.createBox(camboxes,40,90,40,90,40,90)
 
+var newPanPos = {x:0,y:0}
+var lastPanPos = {x:0,y:0}
+var lastMode = false
 
 function render(timestamp) {
     var time = timestamp - lastTime
     if (!time) {
         time = 0
     }
-
-    // if (isKeyPressed("ArrowRight")) {
-    // x+=time/5;
-    // } 
-    // if (isKeyPressed("ArrowLeft")) {
-    // x-=time/5;
-    // }
-    // if (isKeyPressed("ArrowUp")) {
-    // y += time/5  ;
-    // }
-    // if (isKeyPressed("ArrowDown")) {
-    // y -= time/5;
-    // }
 
     xVel = 0;
     yVel = 0; 
@@ -422,12 +407,42 @@ function render(timestamp) {
         xVel -= time/10
     }
 
-    // x = Math.round(x);
-    // y = Math.round(y);
+    var newPos = physics.gridCollide(charX,charY,20,20,xVel,yVel,level,32,function(grid,tx,ty) {
+        if (tiles.get(grid,tx,ty) == "wall") {
+            return true
+        }
+    })
+
+    // entities.runAI(enemies,)
+
+    charX = newPos.x
+    charY = newPos.y
+
+
+    if (timestamp) {
+        newPanPos = cam.checkBoxes(camboxes,charX,charY,20,20,timestamp)
+        if (newPanPos) {
+            if (newPanPos.x !== lastPanPos.x || newPanPos.y !== lastPanPos.y) {
+                cam.setPan(c,newPanPos.x,newPanPos.y,300,Math.floor(timestamp))
+                lastMode = "p"
+            }
+        } else {
+            var freeX = charX-canvasWidth/2 
+            var freeY = charY-canvasHeight/2
+            if (lastMode == "p") {
+                cam.setPan(c,freeX,freeY,300,Math.floor(timestamp))
+            }
+            c.x2 = freeX
+            c.y2 = freeY
+            lastMode = "f"
+        }
+    }
+
     cam.tick(c,timestamp)
     x = c.x;
     y = c.y;
-
+    x = Math.round(x);
+    y = Math.round(y);
 
     var renderQueue = []
     ctx.clearRect(0,0,canvasWidth,canvasHeight)
@@ -440,25 +455,14 @@ function render(timestamp) {
 
     entities.render(enemies,x,y,renderQueue)
     zindex.render(renderQueue)
-
-
-   var newPos = physics.gridCollide(charX,charY,20,20,xVel,yVel,level,32,function(grid,tx,ty) {
-        if (tiles.get(grid,tx,ty) == "wall") {
-            return true
-        }
-    })
-
-    entities.runAI(enemies,)
-
-    charX = newPos.x
-    charY = newPos.y
+    cam.renderDebugBoxes(camboxes,x,y)
 
     ctx.fillStyle = "white"
     ctx.fillText(charX, 5, 10);
     ctx.fillText(charY, 5, 30);
 
-
     lastTime = timestamp
+    lastPanPos = newPanPos
     requestAnimationFrame(render)
 }
 

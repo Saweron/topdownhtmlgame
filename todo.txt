@@ -1,5 +1,8 @@
 TODO
 
+OVERALL TODAY GOAL:
+ADD GAME LOOP
+
 ---basic engine 
 
     -add tiles //
@@ -10,17 +13,25 @@ TODO
 
     -add enemies/objects (entities)//
     -make entities render according to z ordering //
+    
+    -add main menu
 
-
-    -add player attacking
     -add game loop
 
-    -add main menu
     -add settings
 
-    -add external level files
+    -add level files
     --add camera animations//
-    --add camera boxes
+    --add camera boxes//
+    --add freecam//
+
+    --refactor everything
+
+    --add transitions between levels
+    --show score for specified amount time when progressing
+
+    -add player attacking
+
 
 ---enemies
 
@@ -36,6 +47,13 @@ TODO
 
     -soldier 
     -large soldier
+
+-- fill in gameplay
+    -sewers level
+    -mines levels 
+    -library levels
+
+    -assets
 
 ---extra cosmetics
 
