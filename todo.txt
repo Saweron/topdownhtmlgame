@@ -30,6 +30,8 @@ ADD GAME LOOP
     --add transitions between levels
     --show score for specified amount time when progressing
 
+    --add in assets and upscale using disabled image smoothing
+
     -add player attacking
 
 

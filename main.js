@@ -9,7 +9,6 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const canvasWidth = 480;
 const canvasHeight = 360;
-
 var lastTime = 0;
 
 var keys = {}
@@ -211,15 +210,15 @@ const physics = {
         return newPos;
     },
     gridCollide: function(x,y,w,h,xv,yv,grid,tilesize,colliderFunction) {
-        var prX = x+xv;
-        var prY = y+yv;
+        var prX = Math.round(x+xv);
+        var prY = Math.round(y+yv);
         var newPos = {x:prX,y:prY};
 
         if (xv < 0) {
             var lower = colliderFunction(grid, util.tt(prX,tilesize), util.tt(y,tilesize));
             var upper = colliderFunction(grid, util.tt(prX,tilesize), util.tt(y+h,tilesize));
             if (upper || lower) {
-                newPos.x = (util.tt(prX,tilesize)+1)*tilesize+1;
+                newPos.x = (util.tt(prX,tilesize)+1)*tilesize;
             }
         }
         if (xv > 0) {
@@ -234,7 +233,7 @@ const physics = {
             var upper = colliderFunction(grid, util.tt(newPos.x,tilesize), util.tt(prY,tilesize));
             var lower = colliderFunction(grid, util.tt(newPos.x+w,tilesize), util.tt(prY,tilesize));
             if (upper || lower) {
-                newPos.y = (util.tt(prY,tilesize)+1)*tilesize+1;
+                newPos.y = (util.tt(prY,tilesize)+1)*tilesize;
             }
         }
 
@@ -248,7 +247,7 @@ const physics = {
 
         return newPos;
     },
-}
+};
 
 const entities = {
     new: function(list,data,onrender,ai) {
@@ -266,7 +265,7 @@ const entities = {
             entities[i].onrender(entities[i].data,camX,camY,rq);
         }
     }
-}
+};
 
 const cam = {
     new: function() {
@@ -343,7 +342,7 @@ const cam = {
             ctx.strokeRect(item.x-camX,util.convertY(item.y-camY,canvasHeight),item.w,-item.h)
         }
     }
-}
+};
 
 const menu = {
     //todo add menu, button, 
@@ -353,37 +352,39 @@ const menu = {
     //evalbuttons
 
     //text
-}
-
+};
 const loading = {
 
-}
+};
 
 const images = graphics.loadassets();
-
 var level = generation.generateTemporary(500,100,["grass","wall"]);
 // var level = generation.generateTemporary(500,100,["grass","grass"]);
-
-var x = 0;
-var y = 0;
 
 var charX = 60;
 var charY = 100;
 var xVel = 0;
 var yVel = 0;
 
+//camera
 var c = cam.new()
+var x = 0;
+var y = 0;
 
-var enemies = []
-entities.new(enemies,{x:0,y:40},graphics.debugentity)
+var newPanPos = {x:0,y:0}
+var lastPanPos = {x:0,y:0}
+var lastMode = false
 
 var camboxes = []
 cam.createBox(camboxes,0,0,40,90,0,0)
 cam.createBox(camboxes,40,90,40,90,40,90)
 
-var newPanPos = {x:0,y:0}
-var lastPanPos = {x:0,y:0}
-var lastMode = false
+//entities
+var enemies = []
+entities.new(enemies,{x:0,y:40},graphics.debugentity)
+
+//gamestate
+var gameState = "playing"
 
 function render(timestamp) {
     var time = timestamp - lastTime
@@ -393,7 +394,6 @@ function render(timestamp) {
 
     xVel = 0;
     yVel = 0; 
-
     if (isKeyPressed("KeyW")) {
         yVel += time/10
     }
@@ -412,13 +412,10 @@ function render(timestamp) {
             return true
         }
     })
-
-    // entities.runAI(enemies,)
-
     charX = newPos.x
     charY = newPos.y
 
-
+    //camera
     if (timestamp) {
         newPanPos = cam.checkBoxes(camboxes,charX,charY,20,20,timestamp)
         if (newPanPos) {
@@ -437,30 +434,34 @@ function render(timestamp) {
             lastMode = "f"
         }
     }
-
     cam.tick(c,timestamp)
     x = c.x;
     y = c.y;
     x = Math.round(x);
     y = Math.round(y);
 
+    //rendering
+    ctx.imageSmoothingEnabled = false;
+
     var renderQueue = []
     ctx.clearRect(0,0,canvasWidth,canvasHeight)
 
-    tiles.render(level,renderQueue,x,y,canvasWidth,canvasHeight,32,graphics.drawtile,1,1,1,1)
     zindex.create(renderQueue,util.zToScreen(charY,y)-32,function() {
         ctx.fillStyle = "white"
         ctx.fillRect(charX-x,util.convertY(charY-y,canvasHeight),20,-20)
     })
 
+    tiles.render(level,renderQueue,x,y,canvasWidth,canvasHeight,32,graphics.drawtile,1,1,1,1)
     entities.render(enemies,x,y,renderQueue)
     zindex.render(renderQueue)
     cam.renderDebugBoxes(camboxes,x,y)
 
+    //debug
     ctx.fillStyle = "white"
     ctx.fillText(charX, 5, 10);
     ctx.fillText(charY, 5, 30);
 
+    //deltatime calculation
     lastTime = timestamp
     lastPanPos = newPanPos
     requestAnimationFrame(render)
