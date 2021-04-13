@@ -2,9 +2,6 @@
 //#region 
 //#endregion
 // var mydata = JSON.parse(data);
-
-const leveldata = {}
-
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const canvasWidth = 480;
@@ -384,36 +381,87 @@ var enemies = []
 entities.new(enemies,{x:0,y:40},graphics.debugentity)
 
 //gamestate
-var gameState = "playing"
+var state = {
+    current: "playing",
+    next: "",
+    tr1: 0,
+    tr2: 0,
+    transitiontype: ""
+}
+
+// var gameState = "playing"
+// var nextState = ""
 
 function render(timestamp) {
+    //deltatime calculation
     var time = timestamp - lastTime
     if (!time) {
         time = 0
     }
 
-    xVel = 0;
-    yVel = 0; 
-    if (isKeyPressed("KeyW")) {
-        yVel += time/10
-    }
-    if (isKeyPressed("KeyS")) {
-        yVel -= time/10
-    }
-    if (isKeyPressed("KeyD")) {
-        xVel += time/10
-    }
-    if (isKeyPressed("KeyA")) {
-        xVel -= time/10
-    }
-
-    var newPos = physics.gridCollide(charX,charY,20,20,xVel,yVel,level,32,function(grid,tx,ty) {
-        if (tiles.get(grid,tx,ty) == "wall") {
-            return true
+    switch (state.current) {
+        case "playing":
+        xVel = 0;
+        yVel = 0; 
+        if (isKeyPressed("KeyW")) {
+            yVel += time/10
         }
-    })
-    charX = newPos.x
-    charY = newPos.y
+        if (isKeyPressed("KeyS")) {
+            yVel -= time/10
+        }
+        if (isKeyPressed("KeyD")) {
+            xVel += time/10
+        }
+        if (isKeyPressed("KeyA")) {
+            xVel -= time/10
+        }
+
+        var newPos = physics.gridCollide(charX,charY,20,20,xVel,yVel,level,32,function(grid,tx,ty) {
+            if (tiles.get(grid,tx,ty) == "wall") {
+                return true
+            }
+        })
+        charX = newPos.x
+        charY = newPos.y
+
+        if (isKeyPressed("KeyP")) {
+            state.current = "paused"
+            console.log("pause")
+        }
+        if (isKeyPressed("KeyT")) {
+            state.current = "transition"
+            state.next = "playing"
+            state.tr1 = timestamp
+            state.tr2 = timestamp + 400
+            console.log("transitioning")
+        }
+        break;
+        
+        case "paused":
+        if (isKeyPressed("KeyR")) {
+            state.current = "playing"
+            console.log("resume")
+        }
+        break;
+
+        case "transition":
+            if (timestamp > state.tr2) {
+                console.log("finished transition")
+                state.current = state.next
+                state.next = ""
+            }
+        break;
+
+        case "summaryscreen":
+        break;
+
+        case "deathscreen":
+        break;
+
+        case "menu":
+        break;
+    }
+    //transition game states
 
     //camera
     if (timestamp) {
@@ -449,7 +497,7 @@ function render(timestamp) {
     zindex.create(renderQueue,util.zToScreen(charY,y)-32,function() {
         ctx.fillStyle = "white"
         ctx.fillRect(charX-x,util.convertY(charY-y,canvasHeight),20,-20)
-    })
+    }) 
 
     tiles.render(level,renderQueue,x,y,canvasWidth,canvasHeight,32,graphics.drawtile,1,1,1,1)
     entities.render(enemies,x,y,renderQueue)
